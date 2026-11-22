@@ -1,4 +1,4 @@
-from pandas.core.common import random_state
+import pandas as pd
 from sklearn.ensemble import IsolationForest
 
 
@@ -12,7 +12,8 @@ def detect_anomalies(data):
             random_state=17
         )
 
-        predict = model.fit_predict(data[column])
+        model.fit(pd.DataFrame(data[column]))
+        predict = model.predict(pd.DataFrame(data[column]))
         anomaly = (predict == -1).astype(int)
 
         data[column + '_anomaly'] = anomaly
