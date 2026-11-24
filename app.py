@@ -1,6 +1,8 @@
 import os
 import sys
 import numpy as np
+import pandas as pd
+
 import matplotlib
 matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -19,6 +21,7 @@ from methods.quantiles.detector import detect_anomalies as detect_quantiles
 from methods.range.detector import detect_anomalies as detect_range
 from methods.isolation_forest.detector import detect_anomalies as detect_isolation_forest
 from LLM.ai_reporter import get_answer
+from LLM.generate_report import generate_json
 
 
 class ParametersDialog(QDialog):
@@ -103,6 +106,7 @@ class ParametersDialog(QDialog):
 
 class MainWindow(QMainWindow):
     RESULTS_PATH = "results/data_results.csv"
+    OUTPUT_JSON_PATH = "results/anomaly.json"
 
     def __init__(self):
         super().__init__()
@@ -129,7 +133,7 @@ class MainWindow(QMainWindow):
 
         self.btn_quant.clicked.connect(lambda: self.open_method_dialog("Метод квантилей"))
         self.btn_range.clicked.connect(lambda: self.open_method_dialog("Метод диапазонов"))
-        self.btn_if.clicked.connect(self.run_method("Метод Isolation Forest"))
+        self.btn_if.clicked.connect(lambda: self.load_data_for_isolation_forest())
         self.btn_save.clicked.connect(self.save_file)
 
         top.addWidget(self.btn_quant)
@@ -164,83 +168,103 @@ class MainWindow(QMainWindow):
 
         self.draw_plots(None)
 
-    # def load_data_for_isolation_forest(self):
-    #     path, _ = QFileDialog.getOpenFileName(
-    #         self, "Открыть CSV с данными", "data",
-    #         "CSV-файлы (*.csv);;Все файлы (*)"
-    #     )
-    #     if not path:
-    #         return
-    #     try:
-    #         self.data = preprocessing(load_data(path))
-    #         self.results = None
-    #         self.text_edit.append(
-    #             f"\nЗагружен файл: {path}\n"
-    #             f"  • строк: {len(self.data)}\n"
-    #             f"  • столбцов: {len(self.data.columns)}"
-    #         )
-    #         self.draw_plots(self.data)
-    #     except Exception as e:
-    #         QMessageBox.critical(self, "Ошибка",
-    #                              f"Не удалось загрузить данные:\n{e}")
-    #
-    # # диалог и запуск метода
-    # def open_method_dialog(self, method_name: str):
-    #     dlg = ParametersDialog(method_name, self)
-    #     if dlg.exec() != QDialog.DialogCode.Accepted:
-    #         return
-    #     values = dlg.values()
-    #     self.last_values = values
-    #     self.last_method = method_name
-    #     self.run_method(method_name, values)
-    #
-    # def run_method(self, method_name: str, values: dict):
-    #     try:
-    #         if method_name == "Метод квантилей":
-    #             results = detect_quantiles(self.data)
-    #         elif method_name == "Метод диапазонов":
-    #             ranges = [list(pair) for pair in values.values()]
-    #             results = detect_range(self.data, ranges)
-    #         elif method_name == "Метод Isolation Forest":
-    #             results = detect_isolation_forest(self.data)
-    #         else:
-    #             return
-    #     except Exception as e:
-    #         QMessageBox.critical(
-    #             self, "Ошибка",
-    #             f"{method_name} завершился с ошибкой:\n{e}"
-    #         )
-    #         return
-    #
-    #     self.results = results
-    #
-    #     saved_path = None
-    #     try:
-    #         os.makedirs(os.path.dirname(self.RESULTS_PATH), exist_ok=True)
-    #         results.to_csv(self.RESULTS_PATH, index=False)
-    #         saved_path = self.RESULTS_PATH
-    #     except Exception as e:
-    #         QMessageBox.warning(
-    #             self, "Предупреждение",
-    #             f"Не удалось сохранить результаты в файл:\n{e}"
-    #         )
-    #
-    #     self._log_results(method_name, results, values, saved_path)
-    #     self.draw_plots(results)
+    def load_data_for_isolation_forest(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Открыть CSV с данными", "data",
+            "CSV-файлы (*.csv);;Все файлы (*)"
+        )
+        if not path:
+            return
+        try:
+            self.data = preprocessing(load_data(path))
+            self.results = None
+            self.text_edit.append(f"\nЗагружен файл: {path}\n")
+            self.draw_plots(self.data)
+            self.run_method("Метод Isolation Forest", self.data)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка",
+                                 f"Не удалось загрузить данные:\n{e}")
+
+    # диалог и запуск метода
+    def open_method_dialog(self, method_name: str):
+        dlg = ParametersDialog(method_name, self)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        values = dlg.values()
+        self.last_values = values
+        self.last_method = method_name
+        self.run_method(method_name, values)
+
+    def run_method(self, method_name: str, values: dict):
+        # если данных ещё нет — строим их из диалога
+        data = self.data
+        if data is None or len(data) == 0:
+            data = self._data_from_values(values)
+
+        try:
+            if method_name == "Метод квантилей":
+                results = detect_quantiles(data)
+            elif method_name == "Метод диапазонов":
+                ranges = [list(pair) for pair in values.values()]
+                results = detect_range(data, ranges)
+            elif method_name == "Метод Isolation Forest":
+                results = detect_isolation_forest(data)
+            else:
+                return
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Ошибка",
+                f"{method_name} завершился с ошибкой:\n{e}"
+            )
+            return
+        ...
+
+        self.results = results
+
+        saved_path = None
+        try:
+            os.makedirs(os.path.dirname(self.RESULTS_PATH), exist_ok=True)
+            results.to_csv(self.RESULTS_PATH, index="Timestamp")
+            saved_path = self.RESULTS_PATH
+            generate_json(self.RESULTS_PATH, self.OUTPUT_JSON_PATH)
+        except Exception as e:
+            QMessageBox.warning(
+                self, "Предупреждение",
+                f"Не удалось сохранить результаты в файл:\n{e}"
+            )
+
+        self._log_results(method_name, results, values, saved_path)
+        self.draw_plots(results)
+
+        try:
+            self.text_edit.append("Идёт генерация отчёта...\n")
+            self.text_edit.append(get_answer(self.OUTPUT_JSON_PATH))
+        except Exception as e:
+            QMessageBox.warning(
+                self, "Ошибка",
+                "Не удалось отправить запрос или получить ответ от модели."
+            )
 
     def _log_results(self, method_name, results, values, saved_path):
-        self.text_edit.append(f"\n=== {method_name} ===")
-        self.text_edit.append("Введённые диапазоны:")
-        for name, (vmin, vmax) in values.items():
-            self.text_edit.append(f"  • {name}: min={vmin:g}, max={vmax:g}")
-        self.text_edit.append("")
         self.text_edit.append("Найдено аномалий:")
         for col in results.columns:
             if col.endswith("_anomaly"):
                 n = int(results[col].sum())
-                self.text_edit.append(f"  • {col[:-len('_anomaly')]}: {n}")
-        if saved_path:
-            self.text_edit.append(f"\nРезультаты сохранены: {saved_path}")
+                self.text_edit.append(f"  • {col[:-len('_anomaly')]}: {n}\n\n")
+
+    def _data_from_values(self, values: dict, n_points: int = 20) -> pd.DataFrame:
+        cols = {}
+        for col, (mn, mx) in values.items():
+            if mx < mn:
+                mn, mx = mx, mn
+            if mx == mn:
+                cols[col] = np.full(n_points, mn)
+            else:
+                # равномерно распределённые точки в диапазоне
+                cols[col] = np.linspace(mn, mx, n_points)
+        df = pd.DataFrame(cols)
+        df.index = pd.RangeIndex(n_points, name="Timestamp")
+        return df
 
     # графики
     def draw_plots(self, data):
