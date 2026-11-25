@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.dates as mdates
 
 def draw_threshold_plots(view, data: pd.DataFrame, ranges: dict = None):
     view.figure.clear()
@@ -195,8 +196,14 @@ def draw_plots(view, data):
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=7, loc="upper right")
 
+        if isinstance(data.index, pd.DatetimeIndex):
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+
     for j in range(len(signal_cols), len(axes)):
         axes[j].set_axis_off()
+
+    view.figure.autofmt_xdate(rotation=30, ha='right')
 
     view.figure.tight_layout()
     view.canvas.draw()

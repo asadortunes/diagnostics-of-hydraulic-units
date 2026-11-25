@@ -1,14 +1,15 @@
 import os
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
 import numpy as np
 import pandas as pd
 
 import matplotlib
-matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+
+matplotlib.use("QtAgg")
+sys.path.append(str(Path(__file__).parent.parent))
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -32,10 +33,11 @@ from LLM.generate_report import generate_json
 
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 class MainWindow(QMainWindow):
-    RESULTS_PATH = "results/data_results.csv"
-    OUTPUT_JSON_PATH = "results/anomaly.json"
+    RESULTS_PATH = str(BASE_DIR / "results" / "data_results.csv")
+    OUTPUT_JSON_PATH = str(BASE_DIR / "results" / "anomaly.json")
 
     def __init__(self):
         super().__init__()
@@ -61,7 +63,7 @@ class MainWindow(QMainWindow):
         self.btn_save = QPushButton("Выгрузить в файл")
 
         self.btn_quant.clicked.connect(lambda: self.load_data_for_method("Метод квантилей"))
-        self.btn_range.clicked.connect(lambda: self.open_method_dialog("Метод диапазонов"))
+        self.btn_range.clicked.connect(lambda: self.load_data_for_method("Метод диапазонов"))
         self.btn_if.clicked.connect(lambda: self.load_data_for_method("Метод Isolation Forest"))
         self.btn_save.clicked.connect(self.save_file)
 
@@ -97,7 +99,7 @@ class MainWindow(QMainWindow):
 
     def load_data_for_method(self, method_name: str):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Открыть CSV с данными", "data",
+            self, "Открыть CSV с данными", str(BASE_DIR),
             "CSV-файлы (*.csv);;Все файлы (*)"
         )
         if not path:
@@ -106,13 +108,15 @@ class MainWindow(QMainWindow):
             self.data = preprocessing(load_data(path))
             self.results = None
             self.text_edit.append(f"\nЗагружен файл: {path}\n")
-            draw_plots(self, self.data)
-
-            self.run_method(method_name, self.data)
-
         except Exception as e:
             QMessageBox.critical(self, "Ошибка",
                                  f"Не удалось загрузить данные:\n{e}")
+            return
+
+        if method_name == "Метод диапазонов":
+            self.open_method_dialog(method_name)
+        else:
+            self.run_method(method_name, {})
 
     # диалог и запуск метода
     def open_method_dialog(self, method_name: str):
@@ -137,6 +141,7 @@ class MainWindow(QMainWindow):
                 draw_threshold_plots(self, results, ranges=values)
             elif method_name == "Метод Isolation Forest":
                 results = detect_isolation_forest(data)
+                draw_plots(self, results)
             else:
                 return
         except Exception as e:

@@ -1,7 +1,9 @@
+from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtGui import QRegularExpressionValidator
 from PyQt6.QtWidgets import (
-    QDialog, QLabel, QLineEdit, QGridLayout, QApplication
+    QDialog, QLabel, QLineEdit, QGridLayout, QVBoxLayout,
+    QDialogButtonBox
 )
-
 class ParametersDialog(QDialog):
 
     def __init__(self, title: str, parent=None):
