@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QDialog, QLabel, QLineEdit, QGridLayout, QVBoxLayout,
     QDialogButtonBox
 )
+
 class ParametersDialog(QDialog):
 
     def __init__(self, title: str, parent=None):

@@ -2,12 +2,26 @@ import pandas as pd
 import numpy as np
 import matplotlib.dates as mdates
 
+COLUMN_LABELS = {
+    "Oil_Pressure_Bar": "Давление масла, бар",
+    "Bearing_Temp_C":   "Температура подшипника, °C",
+    "Vibration_mm_s":   "Вибрация, мм/с",
+    "RPM":              "Частота вращения, об/мин",
+    "Active_Power_MW":  "Активная мощность, МВт",
+    "Water_Flow_m3_h":  "Расход воды, м³/ч",
+}
+
+
+def _label(col: str) -> str:
+    return COLUMN_LABELS.get(col, col)
+
 def draw_threshold_plots(view, data: pd.DataFrame, ranges: dict = None):
     view.figure.clear()
 
     if data is None or len(data.columns) == 0:
         ax = view.figure.add_subplot(111)
-        ax.text(0.5, 0.5, "Данные не загружены.", ha="center", va="center")
+        ax.text(0.5, 0.5, "Данные не загружены.",
+                ha="center", va="center", fontsize=11, transform=ax.transAxes)
         ax.set_axis_off()
         view.figure.tight_layout()
         view.canvas.draw()
@@ -24,55 +38,56 @@ def draw_threshold_plots(view, data: pd.DataFrame, ranges: dict = None):
     ncols = 2
     nrows = (len(signal_cols) + ncols - 1) // ncols
     axes = view.figure.subplots(nrows, ncols)
-
     axes = np.array(axes).flatten()
 
-    color_line = "#000000"  # Чёрная линия
-    color_limit = "#aa0000"  # Красные границы
-    color_anom = "#e74c3c"  # Красные аномалии
-    color_axis = "#111111"  # Черные оси
+    range_values = list(ranges.values()) if ranges else []
 
     for i, col in enumerate(signal_cols):
         ax = axes[i]
 
-        ax.plot(data.index, data[col], color=color_line, linewidth=2, zorder=2)
+        ax.plot(data.index, data[col], color="steelblue",
+                linewidth=0.7, label="сигнал")
 
-        if ranges and col in ranges:
-            min_val, max_val = ranges[col]
-            ax.axhline(y=min_val, color=color_limit, linewidth=2, zorder=1)
-            ax.axhline(y=max_val, color=color_limit, linewidth=2, zorder=1)
+        # Сначала пробуем найти диапазон по русскому ключу,
+        # затем — по позиции (на случай нестандартных имён).
+        pair = None
+        if ranges:
+            pair = ranges.get(_label(col))
+            if pair is None and i < len(range_values):
+                pair = range_values[i]
 
-        anom_col = col + "_anomaly"
-        if anom_col in data.columns:
-            mask = data[anom_col].astype(bool)
+        if pair is not None:
+            min_val, max_val = pair
+            if min_val > max_val:
+                min_val, max_val = max_val, min_val
+
+            ax.axhline(y=min_val, color="crimson", linewidth=1.1,
+                       linestyle="--", label=f"мин = {min_val:g}")
+            ax.axhline(y=max_val, color="crimson", linewidth=1.1,
+                       linestyle="--", label=f"макс = {max_val:g}")
+
+            mask = (data[col] < min_val) | (data[col] > max_val)
+            anom_col = col + "_anomaly"
+            if anom_col in data.columns:
+                mask = mask | data[anom_col].astype(bool)
+            mask = mask & data[col].notna()
+
             if mask.any():
                 ax.scatter(data.index[mask], data.loc[mask, col],
-                           color=color_anom, s=40, edgecolors="white",
-                           linewidth=0.8, zorder=3, label="Аномалия")
+                           color="red", s=18, zorder=3, label="аномалия")
 
-        ax.set_title(col, fontsize=10, pad=10)
-        ax.grid(False)
+        ax.set_title(_label(col), fontsize=10)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=7, loc="upper right")
 
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-
-        ax.spines['left'].set_color(color_axis)
-        ax.spines['left'].set_linewidth(2)
-        ax.spines['bottom'].set_color(color_axis)
-        ax.spines['bottom'].set_linewidth(2)
-
-        ax.set_xticks([])
-        ax.set_yticks([])
-
-        ax.plot(1, 0, ls="", marker=">", ms=10, color=color_axis,
-                transform=ax.get_yaxis_transform(), clip_on=False)
-
-        ax.plot(0, 1, ls="", marker="^", ms=10, color=color_axis,
-                transform=ax.get_xaxis_transform(), clip_on=False)
+        if isinstance(data.index, pd.DatetimeIndex):
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
 
     for j in range(len(signal_cols), len(axes)):
         axes[j].set_axis_off()
 
+    view.figure.autofmt_xdate(rotation=30, ha='right')
     view.figure.tight_layout()
     view.canvas.draw()
 
