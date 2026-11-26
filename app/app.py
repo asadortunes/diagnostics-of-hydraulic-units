@@ -27,8 +27,7 @@ from methods.quantiles.detector import detect_anomalies as detect_quantiles
 from methods.range.detector import detect_anomalies as detect_range
 from methods.isolation_forest.detector import detect_anomalies as detect_isolation_forest
 
-from LLM.ai_reporter import get_answer
-from LLM.generate_report import generate_json
+from LLM.AnalysisWorker import AnalysisWorker
 
 
 
@@ -48,6 +47,7 @@ class MainWindow(QMainWindow):
         self.results = None
         self.last_values = {}
         self.last_method = None
+        self._report_thread: ReportWorker | None = None
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -97,14 +97,45 @@ class MainWindow(QMainWindow):
 
         root.addWidget(splitter, stretch=1)
 
+    def _start_report(self):
+        if self._report_thread is not None and self._report_thread.isRunning():
+            return
+
+        self.text_edit.append("Идёт генерация отчёта...\n")
+
+        worker = AnalysisWorker(
+            self.RESULTS_PATH, self.OUTPUT_JSON_PATH, parent=self
+        )
+        worker.completed.connect(self._on_report_ready)
+        worker.failed.connect(self._on_report_failed)
+        worker.finished.connect(self._on_report_finished)
+        worker.finished.connect(worker.deleteLater)
+
+        self._report_thread = worker
+        worker.start()
+
+    def _on_report_ready(self, text: str):
+        self.text_edit.append(text)
+
+    def _on_report_failed(self, err: str):
+        self.text_edit.append("Ошибка генерации отчёта.\n\n")
+        QMessageBox.warning(
+            self, "Ошибка",
+            f"Не удалось получить ответ от модели:\n{err}"
+        )
+
+    def _on_report_finished(self):
+        self._report_thread = None
+
     def load_data_for_method(self, method_name: str):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Открыть CSV с данными", str(BASE_DIR),
+            self, "Открыть CSV с данными", str(BASE_DIR/"data"),
             "CSV-файлы (*.csv);;Все файлы (*)"
         )
         if not path:
             return
         try:
+            self.text_edit.clear()
             self.data = preprocessing(load_data(path))
             self.results = None
             self.text_edit.append(f"\nЗагружен файл: {path}\n")
@@ -158,24 +189,15 @@ class MainWindow(QMainWindow):
             os.makedirs(os.path.dirname(self.RESULTS_PATH), exist_ok=True)
             results.to_csv(self.RESULTS_PATH, index="Timestamp")
             saved_path = self.RESULTS_PATH
-            generate_json(self.RESULTS_PATH, self.OUTPUT_JSON_PATH)
         except Exception as e:
             QMessageBox.warning(
                 self, "Предупреждение",
                 f"Не удалось сохранить результаты в файл:\n{e}"
             )
+            return
 
         self._log_results(method_name, results, values, saved_path)
-
-        try:
-            self.text_edit.append("Идёт генерация отчёта...\n")
-            self.text_edit.append(get_answer(self.OUTPUT_JSON_PATH))
-        except Exception as e:
-            self.text_edit.append("Ошибка генерации отчёта.\n\n")
-            QMessageBox.warning(
-                self, "Ошибка",
-                "Не удалось отправить запрос или получить ответ от модели."
-            )
+        self._start_report()
 
     def _log_results(self, method_name, results, values, saved_path):
         self.text_edit.append("Найдено аномалий:")
