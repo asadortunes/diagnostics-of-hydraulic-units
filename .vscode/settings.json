@@ -1,0 +1,7 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "code-runner.executorMap": {
+        "python": "cd $dir && /opt/homebrew/bin/python3.9 -u $fileName"
+    },
+    "code-runner.runInTerminal": true
+}
