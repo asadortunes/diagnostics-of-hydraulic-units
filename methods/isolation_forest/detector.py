@@ -7,14 +7,30 @@ def detect_anomalies(data):
     columns = data.columns
 
     for column in columns:
+        series = data[column]
+        features = pd.DataFrame({
+            'values': series,
+            'diff_1': series.diff(),
+            'diff_5': series.diff(5),
+            'rolling_mean': series.shift(1).rolling(5).mean(),
+            'rolling_std': series.shift(1).rolling(5).std()
+
+        })
+
+        valid = features.notna().all(axis=1)
+
         model = IsolationForest(
-            contamination=0.05,
+            n_estimators=300,
+            max_samples=256,
+            contamination=0.0065,
+            max_features=1.0,
             random_state=17
         )
 
-        model.fit(pd.DataFrame(data[column]))
-        predict = model.predict(pd.DataFrame(data[column]))
-        anomaly = (predict == -1).astype(int)
+        model.fit(features.loc[valid])
+        predict = model.predict(features.loc[valid])
+        anomaly = pd.Series(0, index=data.index)
+        anomaly.loc[valid] = (predict == -1).astype(int)
 
         data[column + '_anomaly'] = anomaly
 

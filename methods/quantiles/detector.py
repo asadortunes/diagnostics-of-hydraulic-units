@@ -6,12 +6,12 @@ def detect_anomalies(data):
     columns = data.columns
 
     for column in columns:
-        q1 = data[column].quantile(0.25)
-        q3 = data[column].quantile(0.75)
+        q1 = data[column].quantile(0.1)
+        q3 = data[column].quantile(0.9)
         iqr = q3 - q1
 
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
+        lower_bound = q1 - 1.0 * iqr
+        upper_bound = q3 + 1.0 * iqr
 
         anomalies = (data[column] < lower_bound) | (data[column] > upper_bound)
         data[column + '_anomaly'] = anomalies
