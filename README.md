@@ -53,6 +53,34 @@ diagnostics-of-hydraulic-units/
     └──__init__.py
 
 ```
+## Установка и запуск проекта
+
+### 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/asadortunes/diagnostics-of-hydraulic-units.git
+cd diagnostics-of-hydraulic-units
+```
+
+### 2. Установка зависимостей
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Запуск приложения
+
+```bash
+python app/main.py
+```
+
+### Используемые библиотеки
+
+- pandas
+- numpy
+- scikit-learn
+- matplotlib
+- PyQt6
 
 ## Характеристики датасета
 
