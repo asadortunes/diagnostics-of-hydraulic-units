@@ -1,10 +1,10 @@
 {
-    "total_anomalies": 10,
+    "total_anomalies": 9,
     "anomalies": [
         {
             "sensor": "Oil_Pressure_Bar",
-            "start_time": "2026-10-26 22:13:00",
-            "end_time": "2026-10-26 22:16:00"
+            "start_time": "2026-10-26 22:14:00",
+            "end_time": "2026-10-26 22:15:00"
         },
         {
             "sensor": "Bearing_Temp_C",
@@ -28,13 +28,8 @@
         },
         {
             "sensor": "RPM",
-            "start_time": "2026-10-26 22:36:00",
-            "end_time": "2026-10-26 22:38:00"
-        },
-        {
-            "sensor": "RPM",
-            "start_time": "2026-10-27 15:30:00",
-            "end_time": "2026-10-27 15:30:00"
+            "start_time": "2026-10-26 22:37:00",
+            "end_time": "2026-10-26 22:37:00"
         },
         {
             "sensor": "Active_Power_MW",
