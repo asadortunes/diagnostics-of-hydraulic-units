@@ -68,19 +68,22 @@ cd diagnostics-of-hydraulic-units
 pip install -r requirements.txt
 ```
 
-### 3. Запуск приложения
+
+### 3. Запуск локальной LLM
+
+```bash
+ollama pull mistral:7b # mac-os
+ollama ... # windows
+```
+
+
+### 4. Запуск приложения
 
 ```bash
 python app/main.py
 ```
 
-### Используемые библиотеки
 
-- pandas
-- numpy
-- scikit-learn
-- matplotlib
-- PyQt6
 
 ## Характеристики датасета
 
