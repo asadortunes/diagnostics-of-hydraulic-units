@@ -10,6 +10,50 @@
 
 Датасет предназначен для экспериментов с алгоритмами обнаружения аномалий, анализа временных рядов и разработки интеллектуальных систем технической диагностики.
 
+## Дерево файлов проекта
+
+``` text
+diagnostics-of-hydraulic-units/
+│   README.md
+│   requirements.txt
+│   tree.txt
+│
+├──app
+│    ├──app.py
+│    ├──ParametersDialog.py
+│    └──Plots.py
+│       
+├──data
+│    └── train.csv
+│       
+├──LLM
+│    ├──ai_reporter.py
+│    ├──AnalysisWorker.py
+│    └──generate_report.py
+│       
+├──methods
+│   ├──isolation_forest
+│   │   ├──detector.py
+│   │   └──__init__.py
+│   │       
+│   ├──quantiles
+│   │   ├──detector.py
+│   │   └──__init__.py
+│   │       
+│   └──range
+│       ├──detector.py
+│       └──__init__.py
+│           
+├──results
+│   ├──anomaly.json
+│   └──data_results.csv
+│       
+└──utils
+    ├──preprocessing.py
+    └──__init__.py
+
+```
+
 ## Характеристики датасета
 
 | Характеристика | Значение |
