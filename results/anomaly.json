@@ -1,15 +1,15 @@
 {
-    "total_anomalies": 10,
+    "total_anomalies": 12,
     "anomalies": [
         {
             "sensor": "Oil_Pressure_Bar",
-            "start_time": "2026-10-26 22:13:00",
-            "end_time": "2026-10-26 22:16:00"
+            "start_time": "2026-10-26 22:12:00",
+            "end_time": "2026-10-26 22:17:00"
         },
         {
             "sensor": "Bearing_Temp_C",
-            "start_time": "2026-10-26 22:20:00",
-            "end_time": "2026-10-26 22:25:00"
+            "start_time": "2026-10-26 22:19:00",
+            "end_time": "2026-10-26 22:26:00"
         },
         {
             "sensor": "Bearing_Temp_C",
@@ -18,8 +18,13 @@
         },
         {
             "sensor": "Vibration_mm_s",
-            "start_time": "2026-10-26 22:29:00",
-            "end_time": "2026-10-26 22:32:00"
+            "start_time": "2026-10-26 22:28:00",
+            "end_time": "2026-10-26 22:33:00"
+        },
+        {
+            "sensor": "Vibration_mm_s",
+            "start_time": "2026-10-27 07:02:00",
+            "end_time": "2026-10-27 07:02:00"
         },
         {
             "sensor": "Vibration_mm_s",
@@ -28,8 +33,8 @@
         },
         {
             "sensor": "RPM",
-            "start_time": "2026-10-26 22:36:00",
-            "end_time": "2026-10-26 22:38:00"
+            "start_time": "2026-10-26 22:35:00",
+            "end_time": "2026-10-26 22:39:00"
         },
         {
             "sensor": "RPM",
@@ -37,14 +42,19 @@
             "end_time": "2026-10-27 15:30:00"
         },
         {
+            "sensor": "RPM",
+            "start_time": "2026-10-27 21:48:00",
+            "end_time": "2026-10-27 21:48:00"
+        },
+        {
             "sensor": "Active_Power_MW",
-            "start_time": "2026-10-26 22:43:00",
-            "end_time": "2026-10-26 22:47:00"
+            "start_time": "2026-10-26 22:41:00",
+            "end_time": "2026-10-26 22:49:00"
         },
         {
             "sensor": "Water_Flow_m3_h",
-            "start_time": "2026-10-26 22:42:00",
-            "end_time": "2026-10-26 22:48:00"
+            "start_time": "2026-10-26 22:41:00",
+            "end_time": "2026-10-26 22:49:00"
         },
         {
             "sensor": "Water_Flow_m3_h",
