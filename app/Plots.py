@@ -132,6 +132,7 @@ def draw_boxplots(view, data: pd.DataFrame):
             patch_artist=True,
             widths=0.45,
             showfliers=True,
+            whis=2.0,
             boxprops=dict(facecolor="steelblue", alpha=0.55),
             medianprops=dict(color="darkorange", linewidth=1.6),
             whiskerprops=dict(color="gray"),

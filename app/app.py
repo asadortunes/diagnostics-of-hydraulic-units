@@ -25,6 +25,7 @@ from utils.preprocessing import load_data, preprocessing
 
 from methods.quantiles.detector import detect_anomalies as detect_quantiles
 from methods.range.detector import detect_anomalies as detect_range
+from methods.Z_score.detector import detect_anomalies as detect_z
 from methods.isolation_forest.detector import detect_anomalies as detect_isolation_forest
 
 from LLM.AnalysisWorker import AnalysisWorker
@@ -44,6 +45,7 @@ class MainWindow(QMainWindow):
         self.resize(1200, 700)
 
         self.data = None
+        self.data_clear = None
         self.results = None
         self.last_values = {}
         self.last_method = None
@@ -58,17 +60,20 @@ class MainWindow(QMainWindow):
 
         self.btn_quant = QPushButton("Метод квантилей")
         self.btn_range = QPushButton("Метод диапазонов")
+        self.btn_zScore = QPushButton("z-core")
         self.btn_if = QPushButton("Метод Isolation Forest")
         self.freeSpace = QLabel("\t")
         self.btn_save = QPushButton("Выгрузить в файл")
 
         self.btn_quant.clicked.connect(lambda: self.load_data_for_method("Метод квантилей"))
         self.btn_range.clicked.connect(lambda: self.load_data_for_method("Метод диапазонов"))
+        self.btn_zScore.clicked.connect(lambda: self._load_data_for_zscore())
         self.btn_if.clicked.connect(lambda: self.load_data_for_method("Метод Isolation Forest"))
         self.btn_save.clicked.connect(self.save_file)
 
         top.addWidget(self.btn_quant)
         top.addWidget(self.btn_range)
+        top.addWidget(self.btn_zScore)
         top.addWidget(self.btn_if)
         top.addWidget(self.freeSpace)
         top.addWidget(self.btn_save)
@@ -149,6 +154,50 @@ class MainWindow(QMainWindow):
         else:
             self.run_method(method_name, {})
 
+    def _load_data_for_zscore(self):
+        # Файл с аномалиями
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Открыть CSV с аномалиями", str(BASE_DIR / "data"),
+            "CSV-файлы (*.csv);;Все файлы (*)"
+        )
+        if not path:
+            return
+
+        try:
+            self.text_edit.clear()
+            self.data = preprocessing(load_data(path))
+            self.data_clear = None
+            self.results = None
+            self.text_edit.append(f"\nЗагружен файл с аномалиями: {path}\n")
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Ошибка",
+                f"Не удалось загрузить файл с аномалиями:\n{e}"
+            )
+            return
+
+        # Чистый файл без аномалий
+        clear_path, _ = QFileDialog.getOpenFileName(
+            self, "Открыть чистый CSV без аномалий", str(BASE_DIR / "data"),
+            "CSV-файлы (*.csv);;Все файлы (*)"
+        )
+        if not clear_path:
+            self.text_edit.append("Загрузка отменена: чистый файл не выбран.\n")
+            return
+
+        try:
+            self.data_clear = preprocessing(load_data(clear_path))
+            self.text_edit.append(f"Загружен чистый файл: {clear_path}\n")
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Ошибка",
+                f"Не удалось загрузить чистый файл:\n{e}"
+            )
+            return
+        print("AA89")
+
+        self.run_method("z-score", {}, data_clear=self.data_clear)
+
     # диалог и запуск метода
     def open_method_dialog(self, method_name: str):
         dlg = ParametersDialog(method_name, self)
@@ -157,7 +206,7 @@ class MainWindow(QMainWindow):
         values = dlg.values()
         self.run_method(method_name, values)
 
-    def run_method(self, method_name: str, values: dict):
+    def run_method(self, method_name: str, values: dict, data_clear=None):
         data = self.data
         if data is None or len(data) == 0:
             data = self._data_from_values(values)
@@ -170,6 +219,15 @@ class MainWindow(QMainWindow):
                 ranges = [list(pair) for pair in values.values()]
                 results = detect_range(data, ranges)
                 draw_threshold_plots(self, results, ranges=values)
+            elif method_name == "z-score":
+                if data_clear is None:
+                    QMessageBox.warning(
+                        self, "Ошибка",
+                        "Для z-score не загружен чистый файл без аномалий."
+                    )
+                    return
+                results = detect_z(data, data_clear)
+                draw_plots(self, results)
             elif method_name == "Метод Isolation Forest":
                 results = detect_isolation_forest(data)
                 draw_plots(self, results)
