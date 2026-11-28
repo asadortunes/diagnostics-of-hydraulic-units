@@ -80,7 +80,7 @@ ollama run mistral:7b # windows
 ### 4. Запуск приложения
 
 ```bash
-python app/main.py
+python app/app.py
 ```
 
 
