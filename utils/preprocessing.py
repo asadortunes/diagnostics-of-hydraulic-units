@@ -12,5 +12,11 @@ def preprocessing(data):
     data = data.drop_duplicates()
     data = data.set_index('Timestamp')
     data = data.sort_index()
+
+    for column in data.columns:
+        data[column] = data[column].fillna(
+            (data[column].shift(1) + data[column].shift(2)) / 2
+        )
     data = data.dropna()
+
     return data
