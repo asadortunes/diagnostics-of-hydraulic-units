@@ -73,7 +73,7 @@ pip install -r requirements.txt
 
 ```bash
 ollama pull mistral:7b # mac-os
-ollama ... # windows
+ollama run mistral:7b # windows
 ```
 
 
